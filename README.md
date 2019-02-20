@@ -36,4 +36,4 @@ Note that timeout `tttt` is encoded in big-endian, while lighthouse ID uses litt
 
 ### Solution
 
-Implemented solution here uses Python `bluepy` package to access `bluez` BT LE API. The script runs in the loop the *ping* command explained above. Once run it wakes up LH "B", with specified timeout and then keeps pinging it, until it is either killed, or the global timeout expires.
+Implemented solution [lhctrl.py](/pylhctrl/lhctrl.py) uses Python `bluepy` package to access `bluez` BT LE API. The script runs in the loop the *ping* command explained above. Once run it wakes up LH "B", with specified timeout and then keeps pinging it, until it is either killed, or the global timeout expires.
