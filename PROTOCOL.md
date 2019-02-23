@@ -2,7 +2,7 @@
 
 ## GATT characteristic
 
-Valve v1 lighthouse use for the power management Bluetooth LE protocol. The _commands_ are data blobs which are written to particular GATT characteristic (handle 0x0035) which the lighthouses expose publicly. The structure of the command (already mentioned in [README.md](/README.md) is following:
+Valve v1 lighthouse use for the power management Bluetooth LE protocol. The _commands_ are data blobs which are written to particular GATT characteristic (handle 0x0035) which the lighthouses expose publicly. The structure of the command (already mentioned in [README.md](/README.md)) is following:
 
 ### Write command
 
