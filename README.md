@@ -15,24 +15,25 @@ The *ping* itself, apart from keeping the lighthouse on, **can also turn it on**
 ### Pinging the lighthouse
 
 The *ping* uses the command described [here](https://github.com/nairol/LighthouseRedox/blob/master/docs/Base%20Station.md#wake-up-and-set-sleep-timeout). Following examples assume a linux machine with `bluez` package installed. `hcitool`, `hciconfig`, `gatttool` are part of this package.
+```
+Offset | Type   | Name             | Description
+-------|--------|------------------|------------
+0x00   | uint8  | unknown          | 0x12
+0x01   | uint8  | cc               | command: 0x00, 0x01, 0x02
+0x02   | uint16 | tttt             | timeout in sec. (big-endian)
+0x04   | uint32 | YYXXVVUU         | lighthouse ID or 0xffffffff (little-endian)
+0x08   | uint8  |                  | 0x00
+...    | ...    |                  | ...
+0x13   | uint8  |                  | 0x00
+```
 
 Let's assume that `aa:bb:cc:dd:ee:ff` is "B" LH MAC address and `UUVVXXYY` is its binhex ID, which can be found either on the LH enclosure or read from OpenVR database, where the LH is identified as `LHB-UUVVXXYY`. Ping can be then executed as BT LE write command to characteristic with handle `0x0035` this way:
 ```
 gatttool --device=aa:bb:cc:dd:ee:ff -I
 [aa:bb:cc:dd:ee:ff][LE]> connect
-[aa:bb:cc:dd:ee:ff][LE]> char-write-req 0x0035 1202ttttYYXXVVUU000000000000000000000000
+[aa:bb:cc:dd:ee:ff][LE]> char-write-req 0x0035 12ccttttYYXXVVUU000000000000000000000000
 ```
-Offset | Type   | Name             | Description
--------|--------|------------------|------------
-0x00   | uint8  | unknown          | 0x12
-0x01   | uint8  | unknown          | 0x02
-0x02   | uint16 | timeout          | timeout (sec) (big-endian)
-0x04   | uint32 | ID               | lighthouse ID or 0xffffffff (little-endian)
-0x08   | uint8  |                  | 0x00
-...    | ...    |                  | ...
-0x13   | uint8  |                  | 0x00
-
-Note that timeout `tttt` is encoded in big-endian, while lighthouse ID uses little-endian. The timeout specifies the time in seconds in which the lighthouse will go into stand-by if it does not receive another *ping*. While it is possible to wake-up the lighthouse with "generic ID" of `ffffffff`, this ID will not reset the timeout, so it is useless for the "keep alive" *ping*, as the lighthouse will eventually go back into stand-by. To keep the LH running (and the timeout resetting) one has to use the correct LH ID as explained above.
+Note that timeout `tttt` is encoded in big-endian, while lighthouse ID uses little-endian. The timeout specifies the time in seconds in which the lighthouse will go into stand-by if it does not receive another *ping*. For the detailed description of the communication protocol (commands) see [PROTOCOL.md](/PROTOCOL.md).
 
 ### Solution
 
