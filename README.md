@@ -20,19 +20,19 @@ Let's assume that `aa:bb:cc:dd:ee:ff` is "B" LH MAC address and `UUVVXXYY` is it
 ```
 gatttool --device=aa:bb:cc:dd:ee:ff -I
 [aa:bb:cc:dd:ee:ff][LE]> connect
-[aa:bb:cc:dd:ee:ff][LE]> char-write-req 0x0035 1202ttttYYXXVVUU000000000000000000000000
+[aa:bb:cc:dd:ee:ff][LE]> char-write-req 0x0035 12ccttttYYXXVVUU000000000000000000000000
 ```
 Offset | Type   | Name             | Description
 -------|--------|------------------|------------
 0x00   | uint8  | unknown          | 0x12
-0x01   | uint8  | unknown          | 0x02
-0x02   | uint16 | timeout          | timeout (sec) (big-endian)
-0x04   | uint32 | ID               | lighthouse ID or 0xffffffff (little-endian)
+0x01   | uint8  | cc               | command: 0x00, 0x01, 0x02 (see [PROTOCOL.md](/PROTOCOL.md))
+0x02   | uint16 | tttt             | timeout in sec. (big-endian)
+0x04   | uint32 | YYXXVVUU         | lighthouse ID or 0xffffffff (little-endian)
 0x08   | uint8  |                  | 0x00
 ...    | ...    |                  | ...
 0x13   | uint8  |                  | 0x00
 
-Note that timeout `tttt` is encoded in big-endian, while lighthouse ID uses little-endian. The timeout specifies the time in seconds in which the lighthouse will go into stand-by if it does not receive another *ping*. While it is possible to wake-up the lighthouse with "generic ID" of `ffffffff`, this ID will not reset the timeout, so it is useless for the "keep alive" *ping*, as the lighthouse will eventually go back into stand-by. To keep the LH running (and the timeout resetting) one has to use the correct LH ID as explained above.
+Note that timeout `tttt` is encoded in big-endian, while lighthouse ID uses little-endian. The timeout specifies the time in seconds in which the lighthouse will go into stand-by if it does not receive another *ping*. For the detailed description of the communication protocol (commands) see [PROTOCOL.md](/PROTOCOL.md).
 
 ### Solution
 
