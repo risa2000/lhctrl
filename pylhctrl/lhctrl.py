@@ -13,7 +13,8 @@ from struct import pack
 #   globals
 #-------------------------------------------------------------------------------
 # wake-up command header
-CMD_HDR = bytes.fromhex('1202')
+CMD_HDR1 = bytes.fromhex('12')
+CMD_HDR2 = bytes.fromhex('02')
 # wake-up command tail
 CMD_TAIL = bytes.fromhex('000000000000000000000000')
 # Characteristic handle 
@@ -36,11 +37,16 @@ GLOBAL_TIMEOUT  = 0
 
 #   functions
 #-------------------------------------------------------------------------------
-def makeUpCmd(lh_id, off_timeout):
+def makeUpCmd(lh_id, off_timeout, res1=None):
     """create LH wake-up command."""
     # need to convert off timeout to big endian
-    b_ot = pack('>H', off_timeout)
-    return pack('<2s2sI12s', CMD_HDR, b_ot, lh_id, CMD_TAIL)
+    if res1 is None:
+        hdr2 = CMD_HDR2
+    else:
+        hdr2 = res1.to_bytes(1, 'little')
+    b_ot = off_timeout.to_bytes(2, 'big')
+    b_id = lh_id.to_bytes(4, 'little')
+    return pack('ss2s4s12s', CMD_HDR1, hdr2, b_ot, b_id, CMD_TAIL)
 
 def argsCheck(args):
     """Sanity check for command line arguments."""
@@ -77,6 +83,11 @@ def readCmd(lh, hndl, verb=0):
     if (verb >= INFO):
         print(res.hex())
     return res
+
+def writeReadCmd(lh, hndl, cmd, verb=0):
+    """Write data and read the same characterstic after."""
+    res = writeCmd(lh, hndl, cmd, verb)
+    return res, readCmd(lh, hndl, verb)
 
 def connect(lh, mac, try_count, try_pause, verb=0):
     """Connect to LH, try it `try_count` times."""
@@ -115,7 +126,7 @@ def loop(args):
     """Run the whole loop, control only "B" lighthouse."""
 
     lh = btle.Peripheral()
-    upCmd = makeUpCmd(args.lh_b_id_int, args.lh_timeout)
+    upCmd = makeUpCmd(args.lh_b_id_int, args.lh_timeout, args.cmd2)
     start = time.monotonic()
 
     while True:
@@ -146,6 +157,7 @@ if __name__ == '__main__':
     ap.add_argument('-p', '--ping_sleep', type=int, default=PING_SLEEP, help='time (sec) between two consecutive pings [%(default)s]')
     ap.add_argument('--try_count', type=int, default=TRY_COUNT, help='number of tries to set up a connection [%(default)s]')
     ap.add_argument('--try_pause', type=int, default=TRY_PAUSE, help='sleep time when reconnecting [%(default)s]')
+    ap.add_argument('--cmd2', type=int, default=CMD_HDR2, help='second byte in the data written to the LH [%(default)s]')
     ap.add_argument('-v', '--verbose', action='count', default=0, help='increase verbosity of the log to stdout')
 
     args = ap.parse_args()
