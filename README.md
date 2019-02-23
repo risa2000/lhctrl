@@ -19,7 +19,7 @@ The *ping* uses the command described [here](https://github.com/nairol/Lighthous
 Offset | Type   | Name             | Description
 -------|--------|------------------|------------
 0x00   | uint8  | unknown          | 0x12
-0x01   | uint8  | cc               | command: 0x00, 0x01, 0x02 (see [PROTOCOL.md](/PROTOCOL.md))
+0x01   | uint8  | cc               | command: 0x00, 0x01, 0x02
 0x02   | uint16 | tttt             | timeout in sec. (big-endian)
 0x04   | uint32 | YYXXVVUU         | lighthouse ID or 0xffffffff (little-endian)
 0x08   | uint8  |                  | 0x00
