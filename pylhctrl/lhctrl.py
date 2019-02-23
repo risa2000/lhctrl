@@ -13,8 +13,8 @@ from struct import pack
 #   globals
 #-------------------------------------------------------------------------------
 # wake-up command header
-CMD_HDR1 = bytes.fromhex('12')
-CMD_HDR2 = bytes.fromhex('02')
+CMD_HDR1 = 0x12
+CMD_HDR2 = 0x02
 # wake-up command tail
 CMD_TAIL = bytes.fromhex('000000000000000000000000')
 # Characteristic handle 
@@ -37,16 +37,17 @@ GLOBAL_TIMEOUT  = 0
 
 #   functions
 #-------------------------------------------------------------------------------
-def makeUpCmd(lh_id, off_timeout, res1=None):
+def makeUpCmd(lh_id, off_timeout, cmd2=None):
     """create LH wake-up command."""
     # need to convert off timeout to big endian
-    if res1 is None:
-        hdr2 = CMD_HDR2
+    hdr1 = CMD_HDR1.to_bytes(1, 'little')
+    if cmd2 is None:
+        hdr2 = CMD_HDR2.to_bytes(1, 'little')
     else:
-        hdr2 = res1.to_bytes(1, 'little')
+        hdr2 = cmd2.to_bytes(1, 'little')
     b_ot = off_timeout.to_bytes(2, 'big')
     b_id = lh_id.to_bytes(4, 'little')
-    return pack('ss2s4s12s', CMD_HDR1, hdr2, b_ot, b_id, CMD_TAIL)
+    return pack('ss2s4s12s', hdr1, hdr2, b_ot, b_id, CMD_TAIL)
 
 def argsCheck(args):
     """Sanity check for command line arguments."""
