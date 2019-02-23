@@ -15,12 +15,6 @@ The *ping* itself, apart from keeping the lighthouse on, **can also turn it on**
 ### Pinging the lighthouse
 
 The *ping* uses the command described [here](https://github.com/nairol/LighthouseRedox/blob/master/docs/Base%20Station.md#wake-up-and-set-sleep-timeout). Following examples assume a linux machine with `bluez` package installed. `hcitool`, `hciconfig`, `gatttool` are part of this package.
-
-Let's assume that `aa:bb:cc:dd:ee:ff` is "B" LH MAC address and `UUVVXXYY` is its binhex ID, which can be found either on the LH enclosure or read from OpenVR database, where the LH is identified as `LHB-UUVVXXYY`. Ping can be then executed as BT LE write command to characteristic with handle `0x0035` this way:
-```
-gatttool --device=aa:bb:cc:dd:ee:ff -I
-[aa:bb:cc:dd:ee:ff][LE]> connect
-[aa:bb:cc:dd:ee:ff][LE]> char-write-req 0x0035 12ccttttYYXXVVUU000000000000000000000000
 ```
 Offset | Type   | Name             | Description
 -------|--------|------------------|------------
@@ -31,7 +25,14 @@ Offset | Type   | Name             | Description
 0x08   | uint8  |                  | 0x00
 ...    | ...    |                  | ...
 0x13   | uint8  |                  | 0x00
+```
 
+Let's assume that `aa:bb:cc:dd:ee:ff` is "B" LH MAC address and `UUVVXXYY` is its binhex ID, which can be found either on the LH enclosure or read from OpenVR database, where the LH is identified as `LHB-UUVVXXYY`. Ping can be then executed as BT LE write command to characteristic with handle `0x0035` this way:
+```
+gatttool --device=aa:bb:cc:dd:ee:ff -I
+[aa:bb:cc:dd:ee:ff][LE]> connect
+[aa:bb:cc:dd:ee:ff][LE]> char-write-req 0x0035 12ccttttYYXXVVUU000000000000000000000000
+```
 Note that timeout `tttt` is encoded in big-endian, while lighthouse ID uses little-endian. The timeout specifies the time in seconds in which the lighthouse will go into stand-by if it does not receive another *ping*. For the detailed description of the communication protocol (commands) see [PROTOCOL.md](/PROTOCOL.md).
 
 ### Solution
