@@ -58,7 +58,7 @@ def argsCheck(args):
 #        print('Scanning not implemented. MAC of "C" LH (option "--lh_c_mac") has to be specified.')
 #        sys.exit(ERR)
     if (args.ping_sleep and args.lh_timeout) and (args.ping_sleep >= TO_FACTOR * args.lh_timeout):
-        print('Ping sleep should be at max {:2f} of LH timeout')
+        print('Ping sleep should be at max {:2f} of LH timeout'.format(TO_FACTOR))
         sys.exit(ERR)
 
 def argsProcess(args):
