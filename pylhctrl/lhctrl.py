@@ -6,9 +6,11 @@ Simple HTC Vive v1 lighthouse power management control over BT LE
 from bluepy import btle
 
 # standard imports
-import time
+import signal
 import sys
+import time
 from struct import pack
+from functools import partial 
 
 #   globals
 #-------------------------------------------------------------------------------
@@ -20,17 +22,17 @@ CMD_TAIL = bytes.fromhex('000000000000000000000000')
 # Characteristic handle 
 HCHAR = 0x35
 # return error code
+EXIT_OK = 0
 ERR = -1
 # ping to LH timeout factor
 TO_FACTOR = 0.75
 # verbosity level INFO
 INFO   = 1
-INFO2  = 2
 
 #   defaults
 #-------------------------------------------------------------------------------
-PING_SLEEP      = 20
 LH_TIMEOUT      = 60
+PING_SLEEP      = LH_TIMEOUT / 3
 TRY_COUNT       = 5
 TRY_PAUSE       = 2
 GLOBAL_TIMEOUT  = 0
@@ -53,19 +55,19 @@ def argsCheck(args):
     """Sanity check for command line arguments."""
     if args.lh_b_id and not args.lh_b_mac:
         print('Scanning not implemented. MAC of "B" LH (option "--lh_b_mac") has to be specified.')
-        sys.exit(ERR)
-#    if args.lh_c_id and not args.lh_c_mac:
-#        print('Scanning not implemented. MAC of "C" LH (option "--lh_c_mac") has to be specified.')
-#        sys.exit(ERR)
+        sys.exit(EXIT_ERR)
+    if args.lh_c_id and not args.lh_c_mac:
+        print('Scanning not implemented. MAC of "C" LH (option "--lh_c_mac") has to be specified.')
+        sys.exit(EXIT_ERR)
     if (args.ping_sleep and args.lh_timeout) and (args.ping_sleep >= TO_FACTOR * args.lh_timeout):
         print('Ping sleep should be at max {:2f} of LH timeout'.format(TO_FACTOR))
-        sys.exit(ERR)
+        sys.exit(EXIT_ERR)
 
 def argsProcess(args):
     if args.lh_b_id:
         args.lh_b_id_int = int(args.lh_b_id, 16)
-#    if args.lh_c_id:
-#        args.lh_c_id_int = int(args.lh_c_id, 16)
+    if args.lh_c_id:
+        args.lh_c_id_int = int(args.lh_c_id, 16)
 
 def writeCmd(lh, hndl, cmd, verb=0):
     """Send write command and log to stdout if requested."""
@@ -118,28 +120,76 @@ def disconnect(lh, verb=0):
 
 def wait(psleep, verb=0):
     if (verb >= INFO):
-        print('Sleeping for {:d} sec ... '.format(psleep), end='', flush=True)
+        print('Sleeping for {:.2f} sec ... '.format(psleep), end='', flush=True)
     time.sleep(psleep)
     if (verb >= INFO):
         print('Done!', flush=True)
 
-def loop(args):
-    """Run the whole loop, control only "B" lighthouse."""
-
+def hndl_io(mac, hndl, cmd, try_count, try_pause, verb):
+    """Write `cmd` command to the `hndl` characteristics and read the reply to/from
+    BTLE device with `mac` MAC address."""
     lh = btle.Peripheral()
-    upCmd = makeUpCmd(args.lh_b_id_int, args.lh_timeout, args.cmd2)
+    connect(lh, mac, try_count, try_pause, verb)
+    resw, resr = writeReadCmd(lh, hndl, cmd, verb)
+    disconnect(lh, verb=args.verbose)
+    return resw, resr
+
+def loop(args):
+    """Run the whole loop."""
+    ping_b = makeUpCmd(args.lh_b_id_int, args.lh_timeout, args.cmd2)
+    if args.lh_c_id:
+        ping_c = makeUpCmd(args.lh_c_id_int, args.lh_timeout, args.cmd2)
+
     start = time.monotonic()
 
-    while True:
-        connect(lh, args.lh_b_mac, args.try_count, args.try_pause, verb=args.verbose)
-        writeCmd(lh, args.hndl, upCmd, verb=args.verbose)
-        if args.verbose >= INFO2:
-            readCmd(lh, args.hndl, verb=args.verbose)
-        disconnect(lh, verb=args.verbose)
-        wait(args.ping_sleep, verb=args.verbose)
-        now = time.monotonic()
-        if args.global_timeout and (now - start > args.global_timeout):
-            break
+    if args.verbose >= INFO:
+        print('Booting up "B" lighthouse')
+        if args.lh_c_id:
+            print('Booting up "C" lighthouse')
+    try:
+        while True:
+            hndl_io(args.lh_b_mac, args.hndl, ping_b, args.try_count, args.try_pause, args.verbose)
+            if args.lh_c_id:
+                hndl_io(args.lh_c_mac, args.hndl, ping_c, args.try_count, args.try_pause, args.verbose)
+            wait(args.ping_sleep, verb=args.verbose)
+            now = time.monotonic()
+            if args.global_timeout and (now - start > args.global_timeout):
+                break
+    except KeyboardInterrupt:
+        print()
+        print('Keyboard interrupt caught')
+        pass
+
+def shutdown(args):
+    """Shut down the lighthouses."""
+    if args.verbose >= INFO:
+        print('Shutting down "B" lighthouse')
+    upCmd = makeUpCmd(args.lh_b_id_int, 1, args.cmd2)
+    hndl_io(args.lh_b_mac, args.hndl, upCmd, args.try_count, args.try_pause, args.verbose)
+
+    if args.lh_c_id:
+        if args.verbose >= INFO:
+            print('Shutting down "C" lighthouse')
+        upCmd = makeUpCmd(args.lh_c_id_int, 1, args.cmd2)
+        hndl_io(args.lh_c_mac, args.hndl, upCmd, args.try_count, args.try_pause, args.verbose)
+
+def sigterm_hndlr(args, sigterm_def, signum, frame):
+    """Signal wrapper for the shutdown function."""
+    if args.verbose >= INFO:
+        print()
+        print(f'Signal {repr(signum)} caught.')
+    shutdown(args)
+    if sigterm_def != signal.SIG_DFL:
+        sigterm_def(signum, frame)
+    else:
+        sys.exit(EXIT_OK)
+
+def main(args):
+    """Main runner."""
+    signal.signal(signal.SIGTERM, partial(sigterm_hndlr, args, signal.getsignal(signal.SIGTERM)))
+    signal.signal(signal.SIGHUP, partial(sigterm_hndlr, args, signal.getsignal(signal.SIGHUP)))
+    loop(args)
+    shutdown(args)
 
 #   main
 #-------------------------------------------------------------------------------
@@ -149,13 +199,13 @@ if __name__ == '__main__':
 
     ap = ArgumentParser(description='Wakes up and runs Vive lighthouse(s) using BT LE power management')
     ap.add_argument('-b', '--lh_b_id', type=str, required=True, help='BinHex ID of the "B" lighthouse (as in LHB-<8_char_id>)')
-#    ap.add_argument('-c', '--lh_c_id', type=int, help='Hex ID of the "C" lighthouse (as in LHB-<8char_id>)')
+    ap.add_argument('-c', '--lh_c_id', type=str, help='Hex ID of the "C" lighthouse (as in LHB-<8char_id>)')
     ap.add_argument('--lh_b_mac', type=str, help='BT MAC of the "B" lighthouse (in format XX:XX:XX:XX:XX:XX)')
-#    ap.add_argument('--lh_c_mac', type=str, help='BT MAC of the "C" lighthouse')
+    ap.add_argument('--lh_c_mac', type=str, help='BT MAC of the "C" lighthouse (in format XX:XX:XX:XX:XX:XX)')
     ap.add_argument('--lh_timeout', type=int, default=LH_TIMEOUT, help='time (sec) in which LH powers off if not pinged [%(default)s]')
     ap.add_argument('--hndl', type=int, default=HCHAR, help='characteristic handle [%(default)s]')
     ap.add_argument('-g', '--global_timeout', type=int, default=GLOBAL_TIMEOUT, help='time (sec) how long to keep the lighthouse(s) alive (0=forever) [%(default)s]')
-    ap.add_argument('-p', '--ping_sleep', type=int, default=PING_SLEEP, help='time (sec) between two consecutive pings [%(default)s]')
+    ap.add_argument('-p', '--ping_sleep', type=float, default=PING_SLEEP, help='time (sec) between two consecutive pings [%(default)s]')
     ap.add_argument('--try_count', type=int, default=TRY_COUNT, help='number of tries to set up a connection [%(default)s]')
     ap.add_argument('--try_pause', type=int, default=TRY_PAUSE, help='sleep time when reconnecting [%(default)s]')
     ap.add_argument('--cmd2', type=int, default=CMD_HDR2, help='second byte in the data written to the LH [%(default)s]')
@@ -164,4 +214,4 @@ if __name__ == '__main__':
     args = ap.parse_args()
     argsCheck(args)
     argsProcess(args)
-    loop(args)
+    main(args)
