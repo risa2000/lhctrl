@@ -23,7 +23,7 @@ CMD_TAIL = bytes.fromhex('000000000000000000000000')
 HCHAR = 0x35
 # return error code
 EXIT_OK = 0
-ERR = -1
+EXIT_ERR = -1
 # ping to LH timeout factor
 TO_FACTOR = 0.75
 # verbosity level INFO
