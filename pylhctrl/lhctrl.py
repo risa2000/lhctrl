@@ -205,7 +205,7 @@ if __name__ == '__main__':
     ap.add_argument('--lh_timeout', type=int, default=LH_TIMEOUT, help='time (sec) in which LH powers off if not pinged [%(default)s]')
     ap.add_argument('--hndl', type=int, default=HCHAR, help='characteristic handle [%(default)s]')
     ap.add_argument('-g', '--global_timeout', type=int, default=GLOBAL_TIMEOUT, help='time (sec) how long to keep the lighthouse(s) alive (0=forever) [%(default)s]')
-    ap.add_argument('-i', '--interface', type=int, default=0, help='The Bluetooth interface on which to make the connection to be set. On Linux, 0 means /dev/hci0, 1 means /dev/hci1 and so on')
+    ap.add_argument('-i', '--interface', type=int, default=0, help='The Bluetooth interface on which to make the connection to be set. On Linux, 0 means /dev/hci0, 1 means /dev/hci1 and so on.')
     ap.add_argument('-p', '--ping_sleep', type=float, default=PING_SLEEP, help='time (sec) between two consecutive pings [%(default)s]')
     ap.add_argument('--try_count', type=int, default=TRY_COUNT, help='number of tries to set up a connection [%(default)s]')
     ap.add_argument('--try_pause', type=int, default=TRY_PAUSE, help='sleep time when reconnecting [%(default)s]')
