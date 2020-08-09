@@ -10,7 +10,7 @@ import signal
 import sys
 import time
 from struct import pack
-from functools import partial 
+from functools import partial
 
 #   globals
 #-------------------------------------------------------------------------------
@@ -19,7 +19,7 @@ CMD_HDR1 = 0x12
 CMD_HDR2 = 0x02
 # wake-up command tail
 CMD_TAIL = bytes.fromhex('000000000000000000000000')
-# Characteristic handle 
+# Characteristic handle
 HCHAR = 0x35
 # return error code
 EXIT_OK = 0
@@ -92,13 +92,13 @@ def writeReadCmd(lh, hndl, cmd, verb=0):
     res = writeCmd(lh, hndl, cmd, verb)
     return res, readCmd(lh, hndl, verb)
 
-def connect(lh, mac, try_count, try_pause, verb=0):
+def connect(lh, mac, try_count, try_pause, verb=0, interface=0):
     """Connect to LH, try it `try_count` times."""
     while True:
         try:
             if (verb >= INFO):
                 print('Connecting to {:s} at {:s} -> '.format(mac, time.asctime()), end='')
-            lh.connect(mac)
+            lh.connect(mac, iface=interface)
             if (verb >= INFO):
                 print(lh.getState())
             break
@@ -125,11 +125,11 @@ def wait(psleep, verb=0):
     if (verb >= INFO):
         print('Done!', flush=True)
 
-def hndl_io(mac, hndl, cmd, try_count, try_pause, verb):
+def hndl_io(mac, hndl, cmd, try_count, try_pause, verb, interface):
     """Write `cmd` command to the `hndl` characteristics and read the reply to/from
     BTLE device with `mac` MAC address."""
     lh = btle.Peripheral()
-    connect(lh, mac, try_count, try_pause, verb)
+    connect(lh, mac, try_count, try_pause, verb, interface)
     resw, resr = writeReadCmd(lh, hndl, cmd, verb)
     disconnect(lh, verb=args.verbose)
     return resw, resr
@@ -148,9 +148,9 @@ def loop(args):
             print('Booting up "C" lighthouse')
     try:
         while True:
-            hndl_io(args.lh_b_mac, args.hndl, ping_b, args.try_count, args.try_pause, args.verbose)
+            hndl_io(args.lh_b_mac, args.hndl, ping_b, args.try_count, args.try_pause, args.verbose, args.interface)
             if args.lh_c_id:
-                hndl_io(args.lh_c_mac, args.hndl, ping_c, args.try_count, args.try_pause, args.verbose)
+                hndl_io(args.lh_c_mac, args.hndl, ping_c, args.try_count, args.try_pause, args.verbose, args.interface)
             wait(args.ping_sleep, verb=args.verbose)
             now = time.monotonic()
             if args.global_timeout and (now - start > args.global_timeout):
@@ -165,13 +165,13 @@ def shutdown(args):
     if args.verbose >= INFO:
         print('Shutting down "B" lighthouse')
     upCmd = makeUpCmd(args.lh_b_id_int, 1, args.cmd2)
-    hndl_io(args.lh_b_mac, args.hndl, upCmd, args.try_count, args.try_pause, args.verbose)
+    hndl_io(args.lh_b_mac, args.hndl, upCmd, args.try_count, args.try_pause, args.verbose, args.interface)
 
     if args.lh_c_id:
         if args.verbose >= INFO:
             print('Shutting down "C" lighthouse')
         upCmd = makeUpCmd(args.lh_c_id_int, 1, args.cmd2)
-        hndl_io(args.lh_c_mac, args.hndl, upCmd, args.try_count, args.try_pause, args.verbose)
+        hndl_io(args.lh_c_mac, args.hndl, upCmd, args.try_count, args.try_pause, args.verbose, args.interface)
 
 def sigterm_hndlr(args, sigterm_def, signum, frame):
     """Signal wrapper for the shutdown function."""
@@ -205,6 +205,7 @@ if __name__ == '__main__':
     ap.add_argument('--lh_timeout', type=int, default=LH_TIMEOUT, help='time (sec) in which LH powers off if not pinged [%(default)s]')
     ap.add_argument('--hndl', type=int, default=HCHAR, help='characteristic handle [%(default)s]')
     ap.add_argument('-g', '--global_timeout', type=int, default=GLOBAL_TIMEOUT, help='time (sec) how long to keep the lighthouse(s) alive (0=forever) [%(default)s]')
+    ap.add_argument('-i', '--interface', type=int, default=0, help='The Bluetooth interface on which to make the connection to be set. On Linux, 0 means /dev/hci0, 1 means /dev/hci1 and so on.')
     ap.add_argument('-p', '--ping_sleep', type=float, default=PING_SLEEP, help='time (sec) between two consecutive pings [%(default)s]')
     ap.add_argument('--try_count', type=int, default=TRY_COUNT, help='number of tries to set up a connection [%(default)s]')
     ap.add_argument('--try_pause', type=int, default=TRY_PAUSE, help='sleep time when reconnecting [%(default)s]')
