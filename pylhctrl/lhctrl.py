@@ -107,7 +107,7 @@ def connect(lh, mac, try_count, try_pause, verb=0, interface=0):
                 raise e
             if (verb >= INFO):
                 print(e)
-            try_count -= 1;
+            try_count -= 1
             time.sleep(try_pause)
             continue
         except:
