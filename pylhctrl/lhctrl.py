@@ -1,5 +1,5 @@
 """
-Simple HTC Vive v1 lighthouse power management control over BT LE
+Valve v1 lighthouse power management over BT LE
 """
 
 # external libs
@@ -200,8 +200,8 @@ if __name__ == '__main__':
     ap = ArgumentParser(description='Wakes up and runs Vive lighthouse(s) using BT LE power management')
     ap.add_argument('-b', '--lh_b_id', type=str, required=True, help='BinHex ID of the "B" lighthouse (as in LHB-<8_char_id>)')
     ap.add_argument('-c', '--lh_c_id', type=str, help='Hex ID of the "C" lighthouse (as in LHB-<8char_id>)')
-    ap.add_argument('--lh_b_mac', type=str, help='BT MAC of the "B" lighthouse (in format XX:XX:XX:XX:XX:XX)')
-    ap.add_argument('--lh_c_mac', type=str, help='BT MAC of the "C" lighthouse (in format XX:XX:XX:XX:XX:XX)')
+    ap.add_argument('--lh_b_mac', type=str, help='BT MAC of the "B" lighthouse (in format aa:bb:cc:dd:ee:ff)')
+    ap.add_argument('--lh_c_mac', type=str, help='BT MAC of the "C" lighthouse (in format aa:bb:cc:dd:ee:ff)')
     ap.add_argument('--lh_timeout', type=int, default=LH_TIMEOUT, help='time (sec) in which LH powers off if not pinged [%(default)s]')
     ap.add_argument('--hndl', type=int, default=HCHAR, help='characteristic handle [%(default)s]')
     ap.add_argument('-g', '--global_timeout', type=int, default=GLOBAL_TIMEOUT, help='time (sec) how long to keep the lighthouse(s) alive (0=forever) [%(default)s]')
