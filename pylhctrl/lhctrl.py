@@ -131,7 +131,7 @@ def hndl_io(mac, hndl, cmd, try_count, try_pause, verb, interface):
     lh = btle.Peripheral()
     connect(lh, mac, try_count, try_pause, verb, interface)
     resw, resr = writeReadCmd(lh, hndl, cmd, verb)
-    disconnect(lh, verb=args.verbose)
+    disconnect(lh, verb=verb)
     return resw, resr
 
 def loop(args):
